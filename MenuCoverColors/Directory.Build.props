@@ -37,7 +37,7 @@
     <PluginName>MenuCoverColors</PluginName>
     <Authors>TheBlackParrot</Authors>
     <Version>0.0.0+$(GameVersion)</Version>
-    <Description>Makes the menu environment colors reflect the selected cover art</Description>
+    <Description>Changes the menu environment colors to reflect the selected map's cover art colors</Description>
     <ProjectSource>https://github.com/TheBlackParrot/MenuCoverColors</ProjectSource>
     <ProjectHome>https://github.com/TheBlackParrot/MenuCoverColors</ProjectHome>
     <DonateUrl>https://ko-fi.com/septilateral</DonateUrl>

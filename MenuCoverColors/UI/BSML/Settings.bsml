@@ -1,0 +1,33 @@
+﻿<settings-container xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+                    xsi:noNamespaceSchemaLocation='https://monkeymanboy.github.io/BSML-Docs/BSMLSchema.xsd'
+                    pref-height="70" child-align="UpperCenter" child-control-height="false">
+    <toggle-setting value="Enabled" text="Enabled"
+                    apply-on-change="true"/>
+    
+    <horizontal><text text="-----" color="#00000000" font-size="3"/></horizontal>
+    
+    <toggle-setting value="FlipGroundAndSkyColors" text="Flip Ground and Sky Colors"
+                    apply-on-change="true"/>
+
+    <horizontal><text text="-----" color="#00000000" font-size="3"/></horizontal>
+    
+    <!-- list-slider-setting has a bug where it forces the formatter as a 0.0-formatted float with centimeters. idk either -->
+    <slider-setting value="KernelSize" text="Kernel Size"
+                    integer-only="true" min="0" max="8" increment="1"
+                    apply-on-change="true" show-buttons="true" formatter="KernelSizeFormatter"
+                    hover-hint="Strength of the color averaging"/>
+    <slider-setting value="DownsampleFactor" text="Downsample Factor"
+                    integer-only="true" min="0" max="6" increment="1"
+                    apply-on-change="true" show-buttons="true"
+                    hover-hint="Lower values will get closer representations of visible color, higher values will average them closer"/>
+
+    <horizontal><text text="-----" color="#00000000" font-size="3"/></horizontal>
+    
+    <dropdown-list-setting options="startEndChoices" value="TransitionStartEndMethod" text="Transition Timing"
+                           apply-on-change="true"/>
+    <dropdown-list-setting options="methodChoices" value="TransitionMethod" text="Transition Method"
+                           apply-on-change="true"/>
+    <slider-setting value="TransitionDuration" text="Transition Duration"
+                    min="0" max="3" increment="0.05" formatter="SecondsFormatter"
+                    apply-on-change="true" show-buttons="true"/>
+</settings-container>

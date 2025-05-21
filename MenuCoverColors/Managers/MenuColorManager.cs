@@ -31,7 +31,7 @@ internal class MenuColorManager : IInitializable
         }
         
         GameObject? menuFogRing = GameObject.Find("MenuFogRing");
-        if (menuFogRing?.TryGetComponent(out InstancedMaterialLightWithId instancedMaterialLightWithId) ?? false)
+        if(menuFogRing?.TryGetComponent(out InstancedMaterialLightWithId instancedMaterialLightWithId) ?? false)
         {
             instancedMaterialLightWithId.SetLightId(2);
         }
@@ -93,11 +93,6 @@ internal class MenuColorManager : IInitializable
         {
             _menuLightsManager.SetColor(1, Color.LerpUnclamped(initialGroundColor, groundColor, time));
             _menuLightsManager.SetColor(2, Color.LerpUnclamped(initialSkyColor, skyColor, time));
-            
-#if V1_40_3
-            _menuLightsManager.SetColor(0, Color.LerpUnclamped(initialGroundColor, groundColor, time));
-            _menuLightsManager.SetColor(4, Color.LerpUnclamped(initialGroundColor, groundColor, time).ColorWithAlpha(0.06f));
-#endif
         }, _fadeTokenSource.Token, Config.TransitionDuration);
     }
 }

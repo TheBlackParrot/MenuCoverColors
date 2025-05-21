@@ -30,20 +30,13 @@
     <BSMLVersion>1.12.4</BSMLVersion>
     <SiraUtilVersion>3.1.14</SiraUtilVersion>
   </PropertyGroup>
-  <PropertyGroup Condition="$(Configuration) == 'Release-1.40.3' Or $(Configuration) == 'Debug-1.40.3'">
-    <GameVersion>1.40.3</GameVersion>
-
-    <BSIPAVersion>4.3.5</BSIPAVersion>
-    <BSMLVersion>1.12.5</BSMLVersion>
-    <SiraUtilVersion>3.1.14</SiraUtilVersion>
-  </PropertyGroup>
 
   <!-- Plugin Metadata -->
   <PropertyGroup>
     <PluginId>MenuCoverColors</PluginId>
     <PluginName>MenuCoverColors</PluginName>
     <Authors>TheBlackParrot</Authors>
-    <Version>0.0.1+$(GameVersion)</Version>
+    <Version>0.0.0+$(GameVersion)</Version>
     <Description>Changes the menu environment colors to reflect the selected map's cover art colors</Description>
     <ProjectSource>https://github.com/TheBlackParrot/MenuCoverColors</ProjectSource>
     <ProjectHome>https://github.com/TheBlackParrot/MenuCoverColors</ProjectHome>

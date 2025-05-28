@@ -26,11 +26,13 @@ internal class ForceEnvironmentColorsOnMapExitPatch
         };
     }
 
-    [HarmonyPatch(typeof(GameplayLevelSceneTransitionEvents), "HandleStandardLevelDidFinish")]
-    [HarmonyPrefix]
+    [HarmonyPatch(typeof(GameplayLevelSceneTransitionEvents), "InvokeAnyGameplayLevelDidFinish")]
+    [HarmonyPostfix]
     // ReSharper disable once InconsistentNaming
-    public static bool ForceEnvironmentColorsOnMapExit(GameplayLevelSceneTransitionEvents __instance)
+    public static void ForceEnvironmentColorsOnMapExit(GameplayLevelSceneTransitionEvents __instance)
     {
+        Plugin.DebugMessage("InvokeAnyGameplayLevelDidFinish called");
+        
         ColorSchemeSO schemeObj = ScriptableObject.CreateInstance<ColorSchemeSO>();
         schemeObj._colorScheme = __instance._standardLevelScenesTransitionSetupData.colorScheme;
         
@@ -38,7 +40,6 @@ internal class ForceEnvironmentColorsOnMapExitPatch
         
         __instance._standardLevelScenesTransitionSetupData.usingOverrideColorScheme = true;
         __instance._standardLevelScenesTransitionSetupData.colorScheme = patched;
-        return true;
     }
 }
 #endif

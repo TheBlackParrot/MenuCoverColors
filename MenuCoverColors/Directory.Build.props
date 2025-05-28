@@ -43,7 +43,7 @@
     <PluginId>MenuCoverColors</PluginId>
     <PluginName>MenuCoverColors</PluginName>
     <Authors>TheBlackParrot</Authors>
-    <Version>0.0.2+$(GameVersion)</Version>
+    <Version>0.0.3+$(GameVersion)</Version>
     <Description>Changes the menu environment colors to reflect the selected map's cover art colors</Description>
     <ProjectSource>https://github.com/TheBlackParrot/MenuCoverColors</ProjectSource>
     <ProjectHome>https://github.com/TheBlackParrot/MenuCoverColors</ProjectHome>

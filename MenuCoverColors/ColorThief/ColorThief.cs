@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+#if !V1_29_1
+using Unity.Collections;
+#endif
 using UnityEngine;
 
 namespace MenuCoverColors.ColorThief;
@@ -55,17 +58,19 @@ public struct Color
             h1 = (g - b) / chroma % 6;
         else if (max == g)
             h1 = 2 + (b - r) / chroma;
-        else //if (max == b)
+        else
             h1 = 4 + (r - g) / chroma;
 
         double lightness = 0.5 * (max - min);
         double saturation = chroma == 0 ? 0 : chroma / (1 - Math.Abs(2 * lightness - 1));
-        HslColor ret;
-        ret.H = 60 * h1;
-        ret.S = saturation;
-        ret.L = lightness;
-        ret.A = toDouble * A;
-        return ret;
+        
+        return new HslColor
+        {
+            H = 60 * h1,
+            S = saturation,
+            L = lightness,
+            A = toDouble * A
+        };
         // ReSharper restore CompareOfFloatsByEqualityOperator
     }
 }
@@ -120,12 +125,12 @@ internal static class Mmcq
     ///     Gets the histo.
     /// </summary>
     /// <param name="pixels">The pixels.</param>
-    /// <returns>Histo (1-d array, giving the number of pixels in each quantized region of color space), or null on error.</returns>
+    /// <returns>Histo (1-d array, giving the number of pixels in each quantized region of color space).</returns>
     private static int[] GetHisto(IEnumerable<int[]> pixels)
     {
         int[] histo = new int[Histosize];
 
-        foreach (int[]? pixel in pixels)
+        foreach (int[] pixel in pixels)
         {
             int rval = pixel[0] >> Rshift;
             int gval = pixel[1] >> Rshift;
@@ -147,7 +152,7 @@ internal static class Mmcq
         int numPixels = pixels.Count;
         for (int i = 0; i < numPixels; i++)
         {
-            int[]? pixel = pixels[i];
+            int[] pixel = pixels[i];
             int rval = pixel[0] >> Rshift;
             int gval = pixel[1] >> Rshift;
             int bval = pixel[2] >> Rshift;
@@ -252,14 +257,14 @@ internal static class Mmcq
         int[] lookaheadsum = new int[VboxLength];
         for (int l = 0; l < lookaheadsum.Length; l++) lookaheadsum[l] = -1;
 
-        int i, j, k, sum, index;
+        int sum, index;
 
         if (maxw == rw)
-            for (i = vbox.R1; i <= vbox.R2; i++)
+            for (int i = vbox.R1; i <= vbox.R2; i++)
             {
                 sum = 0;
-                for (j = vbox.G1; j <= vbox.G2; j++)
-                for (k = vbox.B1; k <= vbox.B2; k++)
+                for (int j = vbox.G1; j <= vbox.G2; j++)
+                for (int k = vbox.B1; k <= vbox.B2; k++)
                 {
                     index = GetColorIndex(i, j, k);
                     sum += histo[index];
@@ -269,11 +274,11 @@ internal static class Mmcq
                 partialsum[i] = total;
             }
         else if (maxw == gw)
-            for (i = vbox.G1; i <= vbox.G2; i++)
+            for (int i = vbox.G1; i <= vbox.G2; i++)
             {
                 sum = 0;
-                for (j = vbox.R1; j <= vbox.R2; j++)
-                for (k = vbox.B1; k <= vbox.B2; k++)
+                for (int j = vbox.R1; j <= vbox.R2; j++)
+                for (int k = vbox.B1; k <= vbox.B2; k++)
                 {
                     index = GetColorIndex(j, i, k);
                     sum += histo[index];
@@ -283,11 +288,11 @@ internal static class Mmcq
                 partialsum[i] = total;
             }
         else /* maxw == bw */
-            for (i = vbox.B1; i <= vbox.B2; i++)
+            for (int i = vbox.B1; i <= vbox.B2; i++)
             {
                 sum = 0;
-                for (j = vbox.R1; j <= vbox.R2; j++)
-                for (k = vbox.G1; k <= vbox.G2; k++)
+                for (int j = vbox.R1; j <= vbox.R2; j++)
+                for (int k = vbox.G1; k <= vbox.G2; k++)
                 {
                     index = GetColorIndex(j, k, i);
                     sum += histo[index];
@@ -297,7 +302,7 @@ internal static class Mmcq
                 partialsum[i] = total;
             }
 
-        for (i = 0; i < VboxLength; i++)
+        for (int i = 0; i < VboxLength; i++)
             if (partialsum[i] != -1)
                 lookaheadsum[i] = total - partialsum[i];
 
@@ -324,12 +329,8 @@ internal static class Mmcq
 
         while (niters < MaxIterations)
         {
-#if PRE_V1_34_2
-            // i... ok. sure. whatever
-            VBox? vbox = lh[lh.Count - 1];
-#else
-            VBox? vbox = lh[^1];
-#endif
+            // ReSharper disable once UseIndexFromEndExpression
+            VBox vbox = lh[lh.Count - 1];
             if (vbox.Count(false) == 0)
             {
                 lh.Sort(comparator);
@@ -369,17 +370,17 @@ internal static class Mmcq
         // get the beginning vbox from the colors
         VBox vbox = VboxFromPixels(pixels, histo);
         List<VBox> pq = [vbox];
-
+        
         // Round up to have the same behaviour as in JavaScript
         int target = (int)Math.Ceiling(FractByPopulation * maxcolors);
 
         // first set of colors, sorted by population
         Iter(pq, ComparatorCount, target, histo);
-
+        
         // Re-sort by the product of pixel occupancy times the size in color
         // space.
         pq.Sort(ComparatorProduct);
-
+        
         // next set - generate the median cuts using the (npix * vol) sorting.
         Iter(pq, ComparatorProduct, maxcolors - pq.Count, histo);
 
@@ -388,7 +389,7 @@ internal static class Mmcq
 
         // calculate the actual colors
         CMap cmap = new();
-        foreach (VBox? vb in pq) cmap.Push(vb);
+        foreach (VBox vb in pq) cmap.Push(vb);
 
         return cmap;
     }
@@ -465,15 +466,12 @@ public class VBox
         if (_count == null || force)
         {
             int npix = 0;
-            int i;
-
-            for (i = R1; i <= R2; i++)
+            
+            for (int i = R1; i <= R2; i++)
             {
-                int j;
-                for (j = G1; j <= G2; j++)
+                for (int j = G1; j <= G2; j++)
                 {
-                    int k;
-                    for (k = B1; k <= B2; k++)
+                    for (int k = B1; k <= B2; k++)
                     {
                         int index = Mmcq.GetColorIndex(i, j, k);
                         npix += _histo[index];
@@ -501,16 +499,12 @@ public class VBox
             int rsum = 0;
             int gsum = 0;
             int bsum = 0;
-
-            int i;
-
-            for (i = R1; i <= R2; i++)
+            
+            for (int i = R1; i <= R2; i++)
             {
-                int j;
-                for (j = G1; j <= G2; j++)
+                for (int j = G1; j <= G2; j++)
                 {
-                    int k;
-                    for (k = B1; k <= B2; k++)
+                    for (int k = B1; k <= B2; k++)
                     {
                         int histoindex = Mmcq.GetColorIndex(i, j, k);
                         int hval = _histo[histoindex];
@@ -525,7 +519,8 @@ public class VBox
             if (ntot > 0)
                 _avg =
                 [
-                    Math.Abs(rsum / ntot), Math.Abs(gsum / ntot),
+                    Math.Abs(rsum / ntot),
+                    Math.Abs(gsum / ntot),
                     Math.Abs(bsum / ntot)
                 ];
             else
@@ -572,7 +567,7 @@ internal class VBoxComparer : IComparer<VBox>
         // Otherwise sort by products
         int a = aCount * aVolume;
         int b = bCount * bVolume;
-        return a < b ? -1 : a > b ? 1 : 0;
+        return a < b ? -1 : (a > b ? 1 : 0);
     }
 }
 
@@ -605,8 +600,16 @@ public class CMap
 
     public int[] Map(int[] color)
     {
-        foreach (VBox? vbox in _vboxes.Where(vbox => vbox.Contains(color))) return vbox.Avg(false);
-        return Nearest(color);
+        try
+        {
+            return _vboxes.First(box => box.Contains(color)).Avg(false);
+        }
+        catch (InvalidOperationException)
+        {
+            return Nearest(color);
+        }
+        //foreach (VBox vbox in _vboxes.Where(vbox => vbox.Contains(color))) return vbox.Avg(false);
+        //return Nearest(color);
     }
 
     private int[] Nearest(int[] color)
@@ -614,7 +617,7 @@ public class CMap
         double d1 = double.MaxValue;
         int[] pColor = null!;
 
-        foreach (VBox? t in _vboxes)
+        foreach (VBox t in _vboxes)
         {
             int[] vbColor = t.Avg(false);
             double d2 = Math.Sqrt(Math.Pow(color[0] - vbColor[0], 2)
@@ -633,11 +636,11 @@ public class CMap
     public VBox FindColor(double targetLuma, double minLuma, double maxLuma, double targetSaturation,
         double minSaturation, double maxSaturation)
     {
-        VBox max = null!;
+        VBox? max = null;
         double maxValue = 0;
         int highestPopulation = _vboxes.Select(p => p.Count(false)).Max();
 
-        foreach (VBox? swatch in _vboxes)
+        foreach (VBox swatch in _vboxes)
         {
             int[] avg = swatch.Avg(false);
             HslColor hsl = FromRgb(avg[0], avg[1], avg[2]).ToHsl();
@@ -650,7 +653,7 @@ public class CMap
                 double thisValue = Mmcq.CreateComparisonValue(sat, targetSaturation, luma, targetLuma,
                     swatch.Count(false), highestPopulation);
 
-                if (thisValue > maxValue)
+                if (max == null || thisValue > maxValue)
                 {
                     max = swatch;
                     maxValue = thisValue;
@@ -658,7 +661,7 @@ public class CMap
             }
         }
 
-        return max;
+        return max!;
     }
 
     private static Color FromRgb(int red, int green, int blue)
@@ -694,25 +697,15 @@ public class QuantizedColor(Color color)
 public abstract class ColorThief
 {
     private const int DefaultColorCount = 5;
-    private const int DefaultQuality = 10;
-    private const bool DefaultIgnoreWhite = true;
 
     /// <summary>
     ///     Use the median cut algorithm to cluster similar colors and return the base color from the largest cluster.
     /// </summary>
     /// <param name="sourceImage">The source image.</param>
-    /// <param name="quality">
-    ///     0 is the highest quality settings. 10 is the default. There is
-    ///     a trade-off between quality and speed. The bigger the number,
-    ///     the faster a color will be returned but the greater the
-    ///     likelihood that it will not be the visually most dominant color.
-    /// </param>
-    /// <param name="ignoreWhite">if set to <c>true</c> [ignore white].</param>
     /// <returns></returns>
-    public QuantizedColor GetColor(Texture2D sourceImage, int quality = DefaultQuality,
-        bool ignoreWhite = DefaultIgnoreWhite)
+    public QuantizedColor GetColor(Texture2D sourceImage)
     {
-        List<QuantizedColor> palette = GetPalette(sourceImage, DefaultColorCount, quality, ignoreWhite);
+        List<QuantizedColor> palette = GetPalette(sourceImage);
         QuantizedColor? dominantColor = palette.FirstOrDefault();
         return dominantColor!;
     }
@@ -722,19 +715,11 @@ public abstract class ColorThief
     /// </summary>
     /// <param name="sourceImage">The source image.</param>
     /// <param name="colorCount">The color count.</param>
-    /// <param name="quality">
-    ///     0 is the highest quality settings. 10 is the default. There is
-    ///     a trade-off between quality and speed. The bigger the number,
-    ///     the faster a color will be returned but the greater the
-    ///     likelihood that it will not be the visually most dominant color.
-    /// </param>
-    /// <param name="ignoreWhite">if set to <c>true</c> [ignore white].</param>
     /// <returns></returns>
     /// <code>true</code>
-    public static List<QuantizedColor> GetPalette(Texture2D sourceImage, int colorCount = DefaultColorCount,
-        int quality = DefaultQuality, bool ignoreWhite = DefaultIgnoreWhite)
+    public static List<QuantizedColor> GetPalette(Texture2D sourceImage, int colorCount = DefaultColorCount)
     {
-        CMap cmap = GetColorMap(sourceImage, colorCount, quality, ignoreWhite);
+        CMap cmap = GetColorMap(sourceImage, colorCount);
         return cmap.GeneratePalette();
     }
 
@@ -743,18 +728,10 @@ public abstract class ColorThief
     /// </summary>
     /// <param name="sourceImage">The source image.</param>
     /// <param name="colorCount">The color count.</param>
-    /// <param name="quality">
-    ///     0 is the highest quality settings. 10 is the default. There is
-    ///     a trade-off between quality and speed. The bigger the number,
-    ///     the faster a color will be returned but the greater the
-    ///     likelihood that it will not be the visually most dominant color.
-    /// </param>
-    /// <param name="ignoreWhite">if set to <c>true</c> [ignore white].</param>
     /// <returns></returns>
-    private static CMap GetColorMap(Texture2D sourceImage, int colorCount, int quality = DefaultQuality,
-        bool ignoreWhite = DefaultIgnoreWhite)
+    private static CMap GetColorMap(Texture2D sourceImage, int colorCount)
     {
-        int[][] pixelArray = GetPixelsFast(sourceImage, quality, ignoreWhite);
+        int[][] pixelArray = GetPixelsFast(sourceImage);
 
         // Send array to quantize function which clusters values using median
         // cut algorithm
@@ -762,73 +739,28 @@ public abstract class ColorThief
         return cmap;
     }
 
-    private static IEnumerable<int> GetIntFromPixel(Texture2D bmp)
+    // https://github.com/chiutse/ColorThief/issues/2#issuecomment-1494637190
+#if !V1_29_1
+    private static int[][] GetPixelsFast(Texture2D sourceImage, int mipLevel = 0)
     {
-        Color32[] clrs = bmp.GetPixels32();
-        foreach (Color32 clr in clrs)
-        {
-            yield return clr.b;
-            yield return clr.g;
-            yield return clr.r;
-            yield return clr.a;
-        }
-        // for(var x = 0; x < bmp.Width; x++)
-        // {
-        //     for(var y = 0; y < bmp.Height; y++)
-        //     {
-        //         var clr = bmp.GetPixel(x, y);
-        //         yield return clr.B;
-        //         yield return clr.G;
-        //         yield return clr.R;
-        //         yield return clr.A;
-        //     }
-        // }
-    }
-
-    private static int[][] GetPixelsFast(Texture2D sourceImage, int quality, bool ignoreWhite)
+        NativeArray<Color32> mipData = sourceImage.GetPixelData<Color32>(mipLevel);
+#else
+    private static int[][] GetPixelsFast(Texture2D sourceImage)
     {
-        IEnumerable<int> imageData = GetIntFromPixel(sourceImage);
-        int[] pixels = imageData.ToArray();
-        int pixelCount = sourceImage.width * sourceImage.height;
+        Color32[] mipData = sourceImage.GetPixels32();
+#endif
+        int pixelCount = mipData.Length;
+        
+        int[][] pixelArray = new int[pixelCount][];
 
-        const int colorDepth = 4;
-
-        int expectedDataLength = pixelCount * colorDepth;
-        if (expectedDataLength != pixels.Length)
-            throw new ArgumentException("(expectedDataLength = "
-                                        + expectedDataLength + ") != (pixels.length = "
-                                        + pixels.Length + ")");
-
-        // Store the RGB values in an array format suitable for quantize
-        // function
-
-        // numRegardedPixels must be rounded up to avoid an
-        // ArrayIndexOutOfBoundsException if all pixels are good.
-
-        int numRegardedPixels = quality <= 0 ? 0 : (pixelCount + quality - 1) / quality;
-
-        int numUsedPixels = 0;
-        int[][] pixelArray = new int[numRegardedPixels][];
-
-        for (int i = 0; i < pixelCount; i += quality)
-        {
-            int offset = i * 4;
-            int b = pixels[offset];
-            int g = pixels[offset + 1];
-            int r = pixels[offset + 2];
-            int a = pixels[offset + 3];
-
-            // If pixel is mostly opaque and not white
-            if (a >= 125 && !(ignoreWhite && r > 250 && g > 250 && b > 250))
-            {
-                pixelArray[numUsedPixels] = [r, g, b];
-                numUsedPixels++;
-            }
+        for (int i = 0; i < pixelCount; i++) {
+            int b = Convert.ToInt32(mipData[i].b);
+            int g = Convert.ToInt32(mipData[i].g);
+            int r = Convert.ToInt32(mipData[i].r);
+            
+            pixelArray[i] = [r, g, b];
         }
-
-        // Remove unused pixels from the array
-        int[][] copy = new int[numUsedPixels][];
-        Array.Copy(pixelArray, copy, numUsedPixels);
-        return copy;
+        
+        return pixelArray;
     }
 }

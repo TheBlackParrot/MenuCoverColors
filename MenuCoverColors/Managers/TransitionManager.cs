@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+#if PRE_V1_39_1
 using System.Threading;
+#endif
 using System.Threading.Tasks;
 using IPA.Utilities.Async;
 using JetBrains.Annotations;
@@ -82,11 +84,77 @@ internal class TransitionManager : IInitializable, IDisposable
             
             float xVibrancy = ((xMax + xMin) * (xMax - xMin)) / xMax;
             float yVibrancy = ((yMax + yMin) * (yMax - yMin)) / yMax;
-
-            if (xVibrancy > yVibrancy) { return -1; }
-            if (xVibrancy < yVibrancy) { return 1; }
-            return 0;
+            
+            return xVibrancy > yVibrancy ? -1 : xVibrancy < yVibrancy ? 1 : 0;
         }
+    }
+
+    private static async Task RefreshColors(StandardLevelDetailViewController viewController)
+    {
+        if (_levelPackDetailViewController == null)
+        {
+            return;
+        }
+        
+#if PRE_V1_37_1
+        IPreviewBeatmapLevel beatmapLevel = await WaitForBeatmapLoaded(viewController);
+#else
+        BeatmapLevel beatmapLevel = await WaitForBeatmapLoaded(viewController);
+#endif
+            
+#if PRE_V1_37_1
+        Sprite? coverSprite = await beatmapLevel.GetCoverImageAsync(CancellationToken.None);
+#elif PRE_V1_39_1
+        Sprite? coverSprite = await beatmapLevel.previewMediaData.GetCoverSpriteAsync(CancellationToken.None);
+#else
+        Sprite? coverSprite = await beatmapLevel.previewMediaData.GetCoverSpriteAsync();
+#endif
+            
+        RenderTexture? activeRenderTexture = RenderTexture.active; 
+        RenderTexture temporary = RenderTexture.GetTemporary(64, 64, 0,
+            RenderTextureFormat.Default, RenderTextureReadWrite.Default);
+        
+        Texture2D readableTexture = new(64, 64);
+        
+        try
+        {
+            RenderTexture.active = temporary;
+            Graphics.Blit(coverSprite.texture, temporary);
+
+            try
+            {
+                readableTexture.ReadPixels(new Rect(0, 0, temporary.width, temporary.height), 0, 0);
+                readableTexture.Apply();
+                
+                if (Config.KernelSize > 0)
+                {
+                    readableTexture = _levelPackDetailViewController._kawaseBlurRenderer.Blur(readableTexture, 
+                        (KawaseBlurRendererSO.KernelSize)Config.KernelSize - 1);
+                }
+            }
+            finally
+            {
+                RenderTexture.active = activeRenderTexture;
+            }
+        }
+        finally
+        {
+            RenderTexture.ReleaseTemporary(temporary);
+        }
+        
+        List<QuantizedColor> colors = [];
+        try
+        {
+            colors = ColorThief.ColorThief.GetPalette(readableTexture);
+            colors.Sort(new QuantizedColorComparer());
+        }
+        catch (Exception e)
+        {
+            Plugin.Log.Error(e);
+        }
+        
+        MenuColorManager.SetColor(colors[Config.FlipGroundAndSkyColors ? 0 : 1].UnityColor,
+            colors[Config.FlipGroundAndSkyColors ? 1 : 0].UnityColor);        
     }
 
     // https://github.com/WentTheFox/BSDataPuller/blob/0e5349e59a39a28be26e4bb6027d72948fff6eac/Core/MapEvents.cs#L395
@@ -108,74 +176,6 @@ internal class TransitionManager : IInitializable, IDisposable
             return;
         }
         
-        UnityMainThreadTaskScheduler.Factory.StartNew<Task>(async () =>
-        {
-#if PRE_V1_37_1
-            IPreviewBeatmapLevel beatmapLevel = await WaitForBeatmapLoaded(viewController);
-#else
-            BeatmapLevel beatmapLevel = await WaitForBeatmapLoaded(viewController);
-#endif
-            
-#if PRE_V1_37_1
-            Sprite? coverSprite = await beatmapLevel.GetCoverImageAsync(CancellationToken.None);
-#elif PRE_V1_39_1
-            Sprite? coverSprite = await beatmapLevel.previewMediaData.GetCoverSpriteAsync(CancellationToken.None);
-#else
-            Sprite? coverSprite = await beatmapLevel.previewMediaData.GetCoverSpriteAsync();
-#endif
-            
-            RenderTexture? activeRenderTexture = RenderTexture.active;
-            Texture2D? coverTexture = coverSprite.texture;
-            RenderTexture? temporary = RenderTexture.GetTemporary(coverTexture.width, coverTexture.height, 0,
-                RenderTextureFormat.Default, RenderTextureReadWrite.Default);
-            Texture2D? readableTexture;
-            
-            try
-            {
-                Graphics.Blit(coverTexture, temporary);
-                RenderTexture.active = temporary;
-
-                try
-                {
-                    Rect textureRect = coverSprite.textureRect;
-                    readableTexture = new Texture2D((int)textureRect.width, (int)textureRect.height);
-                    
-                    readableTexture.ReadPixels(
-                        textureRect,
-                        0,
-                        0
-                    );
-                    readableTexture.Apply();
-
-                    if (Config.KernelSize > 0)
-                    {
-                        readableTexture = _levelPackDetailViewController._kawaseBlurRenderer.Blur(readableTexture,
-                            (KawaseBlurRendererSO.KernelSize)Config.KernelSize - 1, Config.DownsampleFactor);
-                    }
-                }
-                finally
-                {
-                    RenderTexture.active = activeRenderTexture;
-                }
-            }
-            finally
-            {
-                RenderTexture.ReleaseTemporary(temporary);
-            }
-            
-            List<QuantizedColor> colors = [];
-            try
-            {
-                colors = ColorThief.ColorThief.GetPalette(readableTexture, 5, 3);
-                colors.Sort(new QuantizedColorComparer());
-            }
-            catch (Exception e)
-            {
-                Plugin.Log.Error(e);
-            }
-            
-            MenuColorManager.SetColor(colors[Config.FlipGroundAndSkyColors ? 0 : 1].UnityColor,
-                colors[Config.FlipGroundAndSkyColors ? 1 : 0].UnityColor);
-        });
+        _ = RefreshColors(viewController);
     }
 }

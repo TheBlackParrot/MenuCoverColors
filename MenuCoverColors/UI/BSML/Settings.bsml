@@ -10,16 +10,16 @@
                     apply-on-change="true"/>
 
     <horizontal><text text="-----" color="#00000000" font-size="3"/></horizontal>
-    
+
+    <slider-setting value="TextureSize" text="Texture Size"
+                    integer-only="true" min="8" max="512" increment="8"
+                    apply-on-change="true" show-buttons="true" formatter="TextureSizeFormatter"
+                    hover-hint="Internal size of the cover texture (for color processing)"/>
     <!-- list-slider-setting has a bug where it forces the formatter as a 0.0-formatted float with centimeters. idk either -->
     <slider-setting value="KernelSize" text="Kernel Size"
                     integer-only="true" min="0" max="8" increment="1"
                     apply-on-change="true" show-buttons="true" formatter="KernelSizeFormatter"
                     hover-hint="Strength of the color averaging"/>
-    <slider-setting value="DownsampleFactor" text="Downsample Factor"
-                    integer-only="true" min="0" max="6" increment="1"
-                    apply-on-change="true" show-buttons="true"
-                    hover-hint="Lower values will get closer representations of visible color, higher values will average them closer"/>
 
     <horizontal><text text="-----" color="#00000000" font-size="3"/></horizontal>
     

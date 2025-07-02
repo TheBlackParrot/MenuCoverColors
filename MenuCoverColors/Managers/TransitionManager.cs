@@ -111,10 +111,10 @@ internal class TransitionManager : IInitializable, IDisposable
 #endif
             
         RenderTexture? activeRenderTexture = RenderTexture.active; 
-        RenderTexture temporary = RenderTexture.GetTemporary(64, 64, 0,
+        RenderTexture temporary = RenderTexture.GetTemporary(Config.TextureSize, Config.TextureSize, 0,
             RenderTextureFormat.Default, RenderTextureReadWrite.Default);
         
-        Texture2D readableTexture = new(64, 64);
+        Texture2D readableTexture = new(Config.TextureSize, Config.TextureSize);
         
         try
         {

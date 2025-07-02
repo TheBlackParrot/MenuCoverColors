@@ -24,11 +24,6 @@ internal class SettingsMenuManager : IInitializable, IDisposable
         get => Config.FlipGroundAndSkyColors;
         set => Config.FlipGroundAndSkyColors = value;
     }
-    protected int DownsampleFactor
-    {
-        get => Config.DownsampleFactor;
-        set => Config.DownsampleFactor = value;
-    }
     protected string TransitionStartEndMethod
     {
         get => Config.TransitionStartEndMethod;
@@ -49,9 +44,15 @@ internal class SettingsMenuManager : IInitializable, IDisposable
         get => Config.KernelSize;
         set => Config.KernelSize = value;
     }
+    protected int TextureSize
+    {
+        get => Config.TextureSize;
+        set => Config.TextureSize = value;
+    }
     
     private string SecondsFormatter(float value) => $"{value:0.00}s";
     private string KernelSizeFormatter(int value) => _blurChoices[value].ToString();
+    private string TextureSizeFormatter(int value) => $"{value}px";
     
     [UIValue("startEndChoices")] private readonly List<object> _startEndChoices = ["In", "InOut", "Out"];
     [UIValue("methodChoices")] private readonly List<object> _methodChoices =

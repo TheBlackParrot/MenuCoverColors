@@ -14,10 +14,10 @@ internal class PluginConfig
     
     public virtual bool Enabled { get; set; } = true;
     public virtual bool FlipGroundAndSkyColors { get; set; } = false;
-    public virtual int DownsampleFactor { get; set; } = 1;
     public virtual float TransitionDuration { get; set; } = 0.4f;
     
     public virtual string TransitionStartEndMethod { get; set; } = "InOut";
     public virtual string TransitionMethod { get; set; } = "Cubic";
-    public virtual int KernelSize { get; set; } = 2;
+    public virtual int KernelSize { get; set; } = 1;
+    public virtual int TextureSize { get; set; } = 64;
 }
